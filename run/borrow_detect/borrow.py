@@ -2,9 +2,11 @@ import pandas as pd
 from typing import Optional, Tuple, List, Dict, Set
 from enum import Enum
 from pre_train.aligner.transliterate import Ja2Ar
+import os 
 
-MAIN_PATH = "run/borrow_detect/"
-CORPUS_PATH = MAIN_PATH + "corpora/"
+
+cwd = os.path.dirname(os.path.realpath(__file__))
+CORPUS_PATH = cwd + "/corpora/"
 
 
 class Lang(Enum):
