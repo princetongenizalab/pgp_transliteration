@@ -1,31 +1,27 @@
-# Judeo Arabic: Transliteration tool
-## [Read our paper!](https://aclanthology.org/2024.findings-eacl.102/)
+# Machine transliteration
 
 ### Manual
 
-In order to use this tool, we would suggest you running the following commands. It is highly recommended to use a simple environment, such as Google Colab.
+Running the code from a Bash command line console
 
-### Cloning Code (run only once)
+### Cloning the code (run only once)
 ```
-%%capture
-#@title Cloning Code (run only once)
-%cd /content
-!if [ -d ja_transliteration_tool ]; then rm -rf ja_transliteration_tool; fi
-!git clone https://github.com/dwmitelman/ja_transliteration_tool.git
-%cd ja_transliteration_tool
+git clone https://github.com/princetongenizalab/pgp_transliteration.git
+cd pgp_transliteration
 ```
 
-### Env Preparation (run only once)
+### Environment setup (run only once)
 ```
-%%capture
-#@title Env Preparation  (run only once)
-!pip install -r global_def/requirements.txt
-!huggingface-cli login --token <submit_here_your_hf_token>
+pyenv virtualenv 3.8 pgp_transliteration
+pyenv activate pgp_transliteration
+pip install -r global_def/requirements.txt
+huggingface-cli login --token <[hugging_face_token](https://huggingface.co/docs/hub/en/security-tokens)>
+PYTHONPATH="<local_path_to_cloned_repo>/pgp_transliteration:$PYTHONPATH"
+export PYTHONPATH
 ```
 
 ### Relevant imports (run only once)
 ```
-#@title Relevant imports (run only once)
 from run.e2e_pipe import Import, PipelineManager
 ```
 
@@ -69,10 +65,6 @@ initial_input.by_str(str_text)
 
 ### Converting the JA to AR
 ```
-%%capture
-#@title Converting the JA to AR
-
-# output_format = "by_list_str"
 output_format = "by_docx_path"
 pm = PipelineManager(initial_input.output(), output_format=output_format)
 ```
