@@ -6,3 +6,4 @@ google-api-python-client
 lxml==4.9.4
 pandas
 tabulate
+matplotlib
