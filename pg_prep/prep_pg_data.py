@@ -5,6 +5,7 @@ import pandas as pd
 import csv
 import numpy as np
 import matplotlib.pyplot as plt
+import statistics as st
 
 
 DATA_DIR = "../resources/pgp_data"
@@ -29,22 +30,22 @@ def process_ja_articles_merging(pgpid_df, ids_contents_df):
 	all_ids_text = pgpid_df.merge(ids_contents_df, left_on='pgpid', right_on='document_id')[['pgpid', 'content']]
 	mask = (all_ids_text['content'].str.len() > 5)
 	ids_text_df = all_ids_text.loc[mask]
-	ja_docs_stats(ids_text_df)
+	# ja_docs_stats(ids_text_df)
 	ids_text = ids_text_df.values.tolist()
 	skipped = len(all_ids_text) - len(ids_text_df)
 	return ids_text, skipped
 
 
-def ja_docs_stats(ids_contents_df):
+def ja_docs_stats(ids_contents):
 
-	articles_lens = ids_contents_df["content"].str.len()
+	articles_lens = [len(doc[1]) for doc in ids_contents]
 	print(f"Total count is {len(articles_lens)}")
 	print(f"Average document length is {round(np.nanmean(articles_lens), 2)}")
 	print(f"Variance of document length is {round(np.var(articles_lens), 2)}")
 	binwidth = 500
 	plt.hist(articles_lens, bins=range(0, 8000, binwidth))
 	plt.xticks(range(0, 8000, binwidth))
-	plt.axvline(articles_lens.mean(), color='k', linestyle='dashed', linewidth=1)
+	plt.axvline(st.mean(articles_lens), color='k', linestyle='dashed', linewidth=1)
 	plt.xlabel("Documents length (# characters)")
 	plt.ylabel("Documents count")
 	plt.xticks(rotation=30)
@@ -63,13 +64,14 @@ def prepare_data(save: True):
 
 	pgpid_df, ids_contents_df = read_ja_articles()
 	ids_text, skipped = process_ja_articles_merging(pgpid_df, ids_contents_df)
-	save_ja_articles(ids_text, skipped)
+	if save:
+		save_ja_articles(ids_text, skipped)
 	return ids_text
 
 
 def main():
-	prepare_data(save = True)
- 
+	id_texts = prepare_data(save = True)
+	ja_docs_stats(id_texts)
 
 if __name__=="__main__":
 	main()
