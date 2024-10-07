@@ -10,6 +10,9 @@ from datetime import datetime
 from docx.enum.style import WD_STYLE_TYPE
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml.shared import OxmlElement, qn
+from docx.opc import constants
+from docx.text.run import Run
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 from googleapiclient.http import MediaFileUpload
@@ -17,6 +20,7 @@ import requests
 import re
 
 from run.borrow_detect.borrow import FreqComparator
+from pg_prep.pgp_record import GenizaArticle
 
 AR_LABEL = "B-JA"
 text = [
@@ -172,6 +176,12 @@ class Import(PrePipeline):
 
         self._out = text
 
+    def by_list_objects(self, articles: List[GenizaArticle]) -> None:
+        # if (isinstance(articles, list) and all(isinstance(article, GenizaArticle) for article in articles)) is False:
+        #     raise TypeError("Expected to receive [GenizaArticle]")
+
+        self._out = articles
+
     def by_docx_path(self, document_url: str) -> None:
         if isinstance(document_url, str) is False:
             raise TypeError("Expected to received str")
@@ -183,7 +193,8 @@ class Import(PrePipeline):
         document_txt_url = f'https://docs.google.com/document/d/{document_id}/export?format=txt'
         response = requests.get(document_txt_url)
         if response.status_code != 200:
-            raise RuntimeError(f"The link {document_txt_url} is broken, please check if the permissions are public. Status code: {response.status_code}")
+            raise RuntimeError(
+                f"The link {document_txt_url} is broken, please check if the permissions are public. Status code: {response.status_code}")
 
         self._out = self._split_text(response.content.decode("utf-8"))
 
@@ -243,7 +254,8 @@ class CodeSwitch(InPipeline):
             else:
                 if len(curr_word) > 0:
                     resulted_word = curr_word if Word.convert_label(curr_label) == Word.Lang.NAR else ""
-                    words.append(Word(original_word=curr_word, result_word=resulted_word, lang=Word.convert_label(curr_label)))
+                    words.append(
+                        Word(original_word=curr_word, result_word=resulted_word, lang=Word.convert_label(curr_label)))
                     # init
                     curr_word = ""
                 curr_word += sub_word
@@ -297,8 +309,8 @@ class BorrowDetector(InPipeline):
             for i_word, word in enumerate(line):
                 for prefix_ar, prefix_ja in self.PREFIXES:
                     if word.original_word.startswith(prefix_ja) is False or \
-                       len(word.original_word) - len(prefix_ja) <= 2 or \
-                       self._freq_comparator.is_mixed(prefix_ar, prefix_ja, word.original_word) is False:
+                            len(word.original_word) - len(prefix_ja) <= 2 or \
+                            self._freq_comparator.is_mixed(prefix_ar, prefix_ja, word.original_word) is False:
                         continue
                     stem = word.original_word[len(prefix_ja):]
                     word.processed_word = prefix_ar + self.AR_SUBLINE_PRINT + stem
@@ -374,7 +386,7 @@ class SpellingMistakeDetector(InPipeline):
 
 
 class Export(PostPipeline):
-    CREDENTIALS_JSON = "global_def/docx-read-7b56daaf11c4.json"
+    CREDENTIALS_JSON = "../global_def/docx-read-7b56daaf11c4.json"
     LEGAL_OUTPUT_FORMATS = [
         "by_docx_path",
         "by_list_str"
@@ -409,10 +421,30 @@ class Export(PostPipeline):
             for sentence in self._in
         ]
 
+    def _add_hyperlink(self, paragraph, text, url):
+
+        # This gets access to the document.xml.rels file and gets a new relation id value
+        part = paragraph.part
+        r_id = part.relate_to(url, constants.RELATIONSHIP_TYPE.HYPERLINK, is_external=True)
+
+        # Create the w:hyperlink tag and add needed values
+        hyperlink = OxmlElement('w:hyperlink')
+        hyperlink.set(qn('r:id'), r_id)
+
+        # Create a new run object (a wrapper over a 'w:r' element)
+        new_run = Run(OxmlElement('w:r'), paragraph)
+        new_run.text = text
+
+        # Join all the xml elements together
+        hyperlink.append(new_run._element)
+        paragraph._p.append(hyperlink)
+        return hyperlink
+
     def _create_docx(self):
+
         document = Document()
 
-        h = document.add_heading('Judeo-Arabic Text Transliteration', 0)
+        h = document.add_heading('Judaeo-Arabic to Arabic transliteration', 0)
         h.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
         table = document.add_table(rows=1, cols=3, style="Table Grid")
@@ -423,18 +455,43 @@ class Export(PostPipeline):
         table.rows[0].cells[0].width = Cm(7)
         table.columns[1].width = Cm(7)
         table.rows[0].cells[1].width = Cm(7)
-        table.columns[2].width = Cm(1)
-        table.rows[0].cells[2].width = Cm(1)
+        table.columns[2].width = Cm(2)
+        table.rows[0].cells[2].width = Cm(2)
 
         hdr_cells = table.rows[0].cells
         hdr_cells[0].text = 'Transliterated'
         hdr_cells[1].text = 'JA'
-        hdr_cells[2].text = '#'
-        for i, line in enumerate(self._in):
+
+        hdr_cells[2].text = 'PGPID'  ##'
+        for i, geniza_article in enumerate(self._in):
+
+            if len(geniza_article._processed_text) < 5:
+                continue
             row_cells = table.add_row().cells
-            row_cells[0].text = ' '.join(word.processed_word for word in line)
-            row_cells[1].text = ' '.join(word.original_word for word in line)
-            row_cells[2].text = str(i+1)
+
+            arabic_cell_par = row_cells[0].paragraphs[0]
+            if len(geniza_article._processed_leading_ctxt) > 0:
+                ctxt1_run = arabic_cell_par.add_run(geniza_article._processed_leading_ctxt)
+            if len(geniza_article._processed_target) > 0:
+                target_run = arabic_cell_par.add_run(geniza_article._processed_target)
+                if len(geniza_article._processed_leading_ctxt) > 0 or len(geniza_article._processed_trailing_ctxt) > 0:
+                    target_run.bold = True
+            if len(geniza_article._processed_trailing_ctxt) > 0:
+                ctxt2_run = arabic_cell_par.add_run(geniza_article._processed_trailing_ctxt)
+
+            ja_cell_par = row_cells[1].paragraphs[0]
+            if len(geniza_article._original_leading_ctxt) > 0:
+                ctxt1_run = ja_cell_par.add_run(geniza_article._original_leading_ctxt)
+            if len(geniza_article._original_target) > 0:
+                target_run = ja_cell_par.add_run(geniza_article._original_target)
+                if len(geniza_article._original_leading_ctxt) > 0 or len(geniza_article._original_trailing_ctxt) > 0:
+                    target_run.bold = True
+            if len(geniza_article._original_trailing_ctxt) > 0:
+                ctxt2_run = ja_cell_par.add_run(geniza_article._original_trailing_ctxt)
+
+            pgpid_str = str(geniza_article._pgpid)
+            self._add_hyperlink(row_cells[2].paragraphs[0], pgpid_str,
+                                f"https://geniza.princeton.edu/en/documents/{pgpid_str}/")
 
         for i, row in enumerate(table.rows):
             for cell in row.cells:
@@ -464,7 +521,8 @@ class Export(PostPipeline):
 
         document.add_page_break()
 
-        file_path = 'demo.docx'
+        final_file_name = f'{datetime.now().strftime("%Y-%m-%d_%H:%M:%S_%f")[:-3]} - JA Transliteration'
+        file_path = f'../run/transliterations/{final_file_name}.docx'
 
         document.save(file_path)
 
@@ -475,7 +533,6 @@ class Export(PostPipeline):
 
         drive_service = build('drive', 'v3', credentials=credentials)
 
-        final_file_name = f'{datetime.now().strftime("%Y-%m-%d_%H:%M:%S_%f")[:-3]} - JA Transliteration'
         file_metadata = {
             'name': 'My Document'
         }
@@ -511,7 +568,6 @@ class Export(PostPipeline):
         ).execute()
 
         doc_url = f'https://docs.google.com/document/d/{converted_doc_id}/edit'
-
         return doc_url
 
     def output(self):
@@ -538,7 +594,7 @@ class PipelineManager:
         Export
     ]
 
-    def __init__(self, inp: List[str], output_format: str = "by_docx_path"):
+    def __init__(self, inp: List[str], output_format: str = "by_docx_path", stich_back=True):
         self._in = inp
         self._global_start_time = datetime.now()
         self._output_format = output_format
@@ -564,13 +620,37 @@ class PipelineManager:
                 global_start_time=self._global_start_time,
                 output_format=self._output_format
             ).output()
-
         return self._out
 
-    def _process(self) -> None:
-        self._pre_pipeline = self._in
+    def _process(self, stich_back_long_ones=True) -> None:
+
+        self._pre_pipeline = [geniza_article._original_text for geniza_article in self._in]
         self._in_pipeline = self._process_pre_pipeline()
-        self._post_pipeline = self._process_in_pipeline()
+        post_pipeline_texts = self._process_in_pipeline()
+
+        # Handling long articles
+        prev_article, prev_head, unwanted, idx = None, None, [], 0
+        for geniza_article, org_processed_words in zip(self._in, post_pipeline_texts):
+
+            geniza_article.assign_processed(processed_words=org_processed_words)
+            #A continuing (long) article?
+            if prev_article and prev_article._pgpid == geniza_article._pgpid:
+                #Untangle, append and remove
+                if stich_back_long_ones:
+                    if prev_head and prev_head._pgpid == geniza_article._pgpid:
+                        prev_head.merge(geniza_article)
+                        unwanted.append(idx)
+                    else:
+                        prev_head = geniza_article
+            else:
+                prev_head = geniza_article
+            prev_article = geniza_article
+            idx = idx + 1
+
+        for i in sorted(unwanted, reverse=True):
+            del self._in[i]
+
+        self._post_pipeline = self._in
         self._out = self._process_post_pipeline()
 
     def output(self):
