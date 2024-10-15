@@ -39,7 +39,7 @@ def test_sliding_window(article_content, target_window, ctxt_window):
 	show_chunks(article_content, chunks)
 
 
-def slice(pgpids, contents, target_window, ctxt_window, stich_back = True):
+def slice(pgpids, contents, target_window, ctxt_window):
 
 	chunked_articles = []
 	for article_content, article_pgpid in zip(contents, pgpids):
@@ -67,8 +67,7 @@ def transliterate_geniza():
 	sliced = slice(contents=[ids_texts[0][1], ids_texts[1][1]],
 				   pgpids = [ids_texts[0][0], ids_texts[1][0]],
 				   target_window = 300,
-				   ctxt_window = 100,
-				   stich_back = False)
+				   ctxt_window = 100)
 	tm = TransliterationMan(sliced, stich_back=True)
 	print(f"Your transliteration is ready! Please visit: {tm.output()}")
 

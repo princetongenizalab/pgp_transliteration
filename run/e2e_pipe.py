@@ -627,6 +627,10 @@ class TransliterationMan:
             geniza_article.assign_processed(processed_words=org_processed_words)
             #A continuing (long) article?
             if prev_article and prev_article._pgpid == geniza_article._pgpid:
+
+                #Detect and fix duplication and missing pieces
+                geniza_article.detect_and_fix_errors(prev_article)
+
                 #Untangle, append and remove
                 if stich_back_long_ones:
                     if prev_head and prev_head._pgpid == geniza_article._pgpid:
