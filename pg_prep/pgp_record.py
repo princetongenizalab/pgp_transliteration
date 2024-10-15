@@ -122,6 +122,40 @@ class GenizaArticle(object):
 		return f"{self._processed_leading_ctxt}\n{self._processed_target}\n{self._processed_trailing_ctxt}"
 
 
+	def substrings(self, s):
+		for j in range(0, len(s)):
+			yield s[0:j+1]
+
+
+	def intersect(self, s1, s2, which_to_reverse):
+		set1 = set([s[::-1] for s in list(self.substrings(s1))]) if which_to_reverse == 0 else set(self.substrings(s1))
+		set2 = set([s[::-1] for s in list(self.substrings(s2))]) if which_to_reverse == 1 else set(self.substrings(s2))
+		return set1 & set2
+
+
+	def detect_and_fix_errors(self, prev_article):
+
+		case_b_err = max(self.intersect(prev_article._processed_target[::-1], self._processed_target, 0), key=len, default="")
+		if len(case_b_err) > 2:
+			print(f"Case B error detected => {case_b_err}")
+			#fixing the processed/output/Arabic
+			self._processed_leading_boarder = self._processed_leading_boarder + len(case_b_err)
+			self.mark_processed_text()
+			#fixing the original/input/Judaeo-Arabic
+			self._leading_end_word = self._leading_end_word + len(case_b_err.split())
+			self.adjust_original_text()
+
+		case_c_err = max(self.intersect(prev_article._processed_trailing_ctxt, self._processed_leading_ctxt[::-1], 1), key=len, default="")
+		if len(case_c_err) > 2:
+			print(f"Case C error detected => {case_c_err}")
+			#fixing the processed/output/Arabic
+			self._processed_leading_boarder = self._processed_leading_boarder - len(case_c_err)
+			self.mark_processed_text()
+			#fixing the original/input/Judaeo-Arabic
+			self._leading_end_word = self._leading_end_word - len(case_c_err.split())
+			self.adjust_original_text()
+
+
 	def merge(self, another_article):
 
 		if self._pgpid != another_article._pgpid:
