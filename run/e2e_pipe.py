@@ -107,7 +107,7 @@ class Task:
 
 
 class PrePipeline(Task):
-    _in: List[str]
+    _in: List[GenizaArticle]
     _out: List[List[Word]]
 
     def __init__(self):
@@ -176,11 +176,6 @@ class Import(PrePipeline):
 
         self._out = text
 
-    def by_list_objects(self, articles: List[GenizaArticle]) -> None:
-        # if (isinstance(articles, list) and all(isinstance(article, GenizaArticle) for article in articles)) is False:
-        #     raise TypeError("Expected to receive [GenizaArticle]")
-
-        self._out = articles
 
     def by_docx_path(self, document_url: str) -> None:
         if isinstance(document_url, str) is False:
@@ -193,8 +188,7 @@ class Import(PrePipeline):
         document_txt_url = f'https://docs.google.com/document/d/{document_id}/export?format=txt'
         response = requests.get(document_txt_url)
         if response.status_code != 200:
-            raise RuntimeError(
-                f"The link {document_txt_url} is broken, please check if the permissions are public. Status code: {response.status_code}")
+            raise RuntimeError(f"The link {document_txt_url} is broken, please check if the permissions are public. Status code: {response.status_code}")
 
         self._out = self._split_text(response.content.decode("utf-8"))
 
@@ -254,8 +248,7 @@ class CodeSwitch(InPipeline):
             else:
                 if len(curr_word) > 0:
                     resulted_word = curr_word if Word.convert_label(curr_label) == Word.Lang.NAR else ""
-                    words.append(
-                        Word(original_word=curr_word, result_word=resulted_word, lang=Word.convert_label(curr_label)))
+                    words.append(Word(original_word=curr_word, result_word=resulted_word, lang=Word.convert_label(curr_label)))
                     # init
                     curr_word = ""
                 curr_word += sub_word
@@ -309,8 +302,8 @@ class BorrowDetector(InPipeline):
             for i_word, word in enumerate(line):
                 for prefix_ar, prefix_ja in self.PREFIXES:
                     if word.original_word.startswith(prefix_ja) is False or \
-                            len(word.original_word) - len(prefix_ja) <= 2 or \
-                            self._freq_comparator.is_mixed(prefix_ar, prefix_ja, word.original_word) is False:
+                        len(word.original_word) - len(prefix_ja) <= 2 or \
+                        self._freq_comparator.is_mixed(prefix_ar, prefix_ja, word.original_word) is False:
                         continue
                     stem = word.original_word[len(prefix_ja):]
                     word.processed_word = prefix_ar + self.AR_SUBLINE_PRINT + stem
@@ -443,7 +436,6 @@ class Export(PostPipeline):
     def _create_docx(self):
 
         document = Document()
-
         h = document.add_heading('Judaeo-Arabic to Arabic transliteration', 0)
         h.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
@@ -574,8 +566,8 @@ class Export(PostPipeline):
         return self._out
 
 
-class PipelineManager:
-    _in: List[str]
+class TransliterationMan:
+    _in: List[GenizaArticle]
     _pre_pipeline: List[str]
     _in_pipeline: List[List[Word]]
     _post_pipeline: List[List[Word]]
