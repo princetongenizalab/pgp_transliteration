@@ -30,7 +30,6 @@ def process_ja_articles_merging(pgpid_df, ids_contents_df):
 	all_ids_text = pgpid_df.merge(ids_contents_df, left_on='pgpid', right_on='document_id')[['pgpid', 'content']]
 	mask = (all_ids_text['content'].str.len() > 5)
 	ids_text_df = all_ids_text.loc[mask]
-	# ja_docs_stats(ids_text_df)
 	ids_text = ids_text_df.values.tolist()
 	skipped = len(all_ids_text) - len(ids_text_df)
 	return ids_text, skipped

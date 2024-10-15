@@ -107,7 +107,7 @@ class Task:
 
 
 class PrePipeline(Task):
-    _in: List[GenizaArticle]
+    _in: List[str]
     _out: List[List[Word]]
 
     def __init__(self):
