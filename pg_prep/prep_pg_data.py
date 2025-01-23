@@ -73,11 +73,6 @@ def content_by_pgps(pgpids):
 	ids_texts_df = pd.read_csv(f"{DATA_DIR}/idd_ja_articles.csv")
 	return ids_texts_df[ids_texts_df['pgpid'].isin(pgpids)].values.tolist()
 
-
-def main():
+def prep_and_stats():
 	id_texts = prepare_data(save = True)
 	ja_docs_stats(id_texts)
-
-
-if __name__=="__main__":
-	main()

@@ -408,10 +408,10 @@ class Export(PostPipeline):
     def _create_list(self):
         return [
             (
-                ' '.join([word.original_word for word in sentence]),
-                ' '.join([word.processed_word for word in sentence])
+                ' '.join([word.original_word for word in geniza_article._processed_words]),
+                ' '.join([word.processed_word for word in geniza_article._processed_words])
             )
-            for sentence in self._in
+            for geniza_article in self._in
         ]
 
     def _add_hyperlink(self, paragraph, text, url):
@@ -514,6 +514,9 @@ class Export(PostPipeline):
         document.add_page_break()
 
         final_file_name = f'{datetime.now().strftime("%Y-%m-%d_%H:%M:%S_%f")[:-3]} - JA Transliteration'
+        from pathlib import Path
+        dir_name = f'../run/transliterations'
+        Path(dir_name).mkdir(parents=True, exist_ok=True)
         file_path = f'../run/transliterations/{final_file_name}.docx'
 
         document.save(file_path)
@@ -566,7 +569,7 @@ class Export(PostPipeline):
         return self._out
 
 
-class TransliterationMan:
+class PipelineManager:
     _in: List[GenizaArticle]
     _pre_pipeline: List[str]
     _in_pipeline: List[List[Word]]
