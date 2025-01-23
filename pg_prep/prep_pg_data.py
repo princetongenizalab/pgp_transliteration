@@ -76,11 +76,3 @@ def content_by_pgps(pgpids):
 def prep_and_stats():
 	id_texts = prepare_data(save = True)
 	ja_docs_stats(id_texts)
-
-
-# def main():
-# 	prep_and_stats()
-#
-#
-# if __name__=="__main__":
-# 	main()

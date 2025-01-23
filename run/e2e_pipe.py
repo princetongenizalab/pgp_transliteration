@@ -569,7 +569,7 @@ class Export(PostPipeline):
         return self._out
 
 
-class TransliterationMan:
+class PipelineManager:
     _in: List[GenizaArticle]
     _pre_pipeline: List[str]
     _in_pipeline: List[List[Word]]

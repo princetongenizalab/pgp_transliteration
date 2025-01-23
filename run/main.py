@@ -23,9 +23,9 @@ def transliterate_ja():
     from pg_prep.pgp_record import GenizaArticle
     test_ja = [GenizaArticle(original_text=ja_text, pgpid=-1, ctxt_win_size=100, target_win_size=300)]
 
-    from run.e2e_pipe import TransliterationMan
-    tm = TransliterationMan(test_ja, output_format=output_format)
-    present_output(output_format, tm)
+    from run.e2e_pipe import PipelineManager
+    pm = PipelineManager(test_ja, output_format=output_format)
+    present_output(output_format, pm)
 
 
 def transliterate_pgp_ja():
@@ -43,10 +43,10 @@ def transliterate_pgp_ja():
 				   target_window = 300,
 				   ctxt_window = 100)
 
-    from run.e2e_pipe import TransliterationMan
+    from run.e2e_pipe import PipelineManager
     output_format = "by_docx_path"
-    tm = TransliterationMan(sliced, output_format=output_format, stich_back=True)
-    present_output(output_format, tm)
+    pm = PipelineManager(sliced, output_format=output_format, stich_back=True)
+    present_output(output_format, pm)
 
 
 def main():

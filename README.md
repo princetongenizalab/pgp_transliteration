@@ -1,8 +1,7 @@
-# Document-level Machine transliteration
+# Document-level machine transliteration
 
-Running the code from a Bash command line console
 
-### Setup the environment
+### Setup the environment (bash command-line)
 ```
 git clone https://github.com/princetongenclearizalab/pgp_transliteration.git
 cd pgp_transliteration
@@ -18,8 +17,8 @@ export PYTHONPATH
 
 Prepare a list of Judaeo-Arabic strings associated with IDs
 ```
-    from pg_prep.prep_pg_data import content_by_pgps
-    ids_texts = content_by_pgps([4268, 444])
+from pg_prep.prep_pg_data import content_by_pgps
+ids_texts = content_by_pgps([4268, 444])
 ```
 
 Break-down long documents into smaller groups of interleaving text sequences. 
@@ -34,13 +33,13 @@ sliced = slice(contents=[ids_texts[0][1], ids_texts[1][1]],
 
 ### Invoke the Bert-based model
 ```
-from run.e2e_pipe import TransliterationMan
+from run.e2e_pipe import PipelineManager
 output_format = "by_docx_path"
-tm = TransliterationMan(sliced, output_format=output_format, stich_back=True)```
+pm = PipelineManager(sliced, output_format=output_format, stich_back=True)```
 
 ```
 ### And present the result
 
 ```
-present_output(output_format, tm)
+present_output(output_format, pm)
 ```
