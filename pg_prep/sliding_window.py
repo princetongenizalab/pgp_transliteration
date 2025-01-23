@@ -1,8 +1,6 @@
 #coding: utf8
 
-from run.e2e_pipe import TransliterationMan
-from prep_pg_data import content_by_pgps
-from pgp_record import GenizaArticle
+from pg_prep.pgp_record import GenizaArticle
 import cProfile
 
 class FORMATS:
@@ -56,25 +54,5 @@ def slice(pgpids, contents, target_window, ctxt_window):
 									target_win_size = which_target_window,
 									original_leading_boarder = chunk[1],
 									original_target_boarder = chunk[2]) for chunk in chunks]
-		return chunked_articles
+	return chunked_articles
 
-def transliterate_geniza():
-
-	test_sliding_window(article_content = "ABCDEFGHIJKLMNOPQRSTUVWXYZ", target_window = 3, ctxt_window = 1)
-	test_sliding_window(article_content = "ABCDEFGHIJKLMNOPQRSTUVWXYZ", target_window = 5, ctxt_window = 0)
-
-	ids_texts = content_by_pgps([444, 4268])
-	sliced = slice(contents=[ids_texts[0][1], ids_texts[1][1]],
-				   pgpids = [ids_texts[0][0], ids_texts[1][0]],
-				   target_window = 300,
-				   ctxt_window = 100)
-	tm = TransliterationMan(sliced, stich_back=True)
-	print(f"Your transliteration is ready! Please visit: {tm.output()}")
-
-
-def main():
-	transliterate_geniza()
- 
-
-if __name__=="__main__":
-	main()
