@@ -1,9 +1,9 @@
 
-def present_output(output_format, tman):
+def present_output(output_format, pman):
 
     if output_format == "by_list_str":
         print("Your transliteration is ready! Here are the results:")
-        for sentence in tman.output():
+        for sentence in pman.output():
             print("JA input: ")
             print(sentence[0])
             print("Transliterated output: ")
@@ -11,7 +11,7 @@ def present_output(output_format, tman):
             print()
 
     elif output_format == "by_docx_path":
-        print(f"Your transliteration is ready! Please visit: {tman.output()}")
+        print(f"Your transliteration is ready! Please visit: {pman.output()}")
 
 
 def transliterate_ja():
@@ -30,22 +30,22 @@ def transliterate_ja():
 
 def transliterate_pgp_ja():
 
-    from pg_prep.sliding_window import test_sliding_window
-    test_sliding_window(article_content = "ABCDEFGHIJKLMNOPQRSTUVWXYZ", target_window = 3, ctxt_window = 1)
-    test_sliding_window(article_content = "ABCDEFGHIJKLMNOPQRSTUVWXYZ", target_window = 5, ctxt_window = 0)
+    # from pg_prep.sliding_window import test_sliding_window
+    # test_sliding_window(article_content = "ABCDEFGHIJKLMNOPQRSTUVWXYZ", target_window = 3, ctxt_window = 1)
+    # test_sliding_window(article_content = "ABCDEFGHIJKLMNOPQRSTUVWXYZ", target_window = 5, ctxt_window = 0)
 
     from pg_prep.prep_pg_data import content_by_pgps
-    ids_texts = content_by_pgps([4268, 444])
+    ids_texts = content_by_pgps([451, 4268, 444])
 
     from pg_prep.sliding_window import slice
-    sliced = slice(contents=[ids_texts[0][1], ids_texts[1][1]],
-				   pgpids = [ids_texts[0][0], ids_texts[1][0]],
+    sliced = slice(contents=[ids_texts[0][1], ids_texts[1][1], ids_texts[2][1]],
+				   pgpids = [ids_texts[0][0], ids_texts[1][0], ids_texts[2][0]],
 				   target_window = 300,
 				   ctxt_window = 100)
 
     from run.e2e_pipe import PipelineManager
     output_format = "by_docx_path"
-    pm = PipelineManager(sliced, output_format=output_format, stich_back=True)
+    pm = PipelineManager(sliced, output_format=output_format, stich_back=False)
     present_output(output_format, pm)
 
 
