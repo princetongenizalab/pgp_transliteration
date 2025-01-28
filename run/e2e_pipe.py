@@ -10,6 +10,7 @@ from datetime import datetime
 from docx.enum.style import WD_STYLE_TYPE
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.text import WD_COLOR_INDEX
 from docx.oxml.shared import OxmlElement, qn
 from docx.opc import constants
 from docx.text.run import Run
@@ -464,20 +465,31 @@ class Export(PostPipeline):
             arabic_cell_par = row_cells[0].paragraphs[0]
             if len(geniza_article._processed_leading_ctxt) > 0:
                 ctxt1_run = arabic_cell_par.add_run(geniza_article._processed_leading_ctxt)
+            if len(geniza_article._processed_errb) > 0:
+                errb_run = arabic_cell_par.add_run(geniza_article._processed_errb)
+                errb_run.font.highlight_color = WD_COLOR_INDEX.RED
+            if len(geniza_article._processed_errc) > 0:
+                errc_run = arabic_cell_par.add_run(geniza_article._processed_errc)
+                errc_run.font.highlight_color = WD_COLOR_INDEX.PINK
             if len(geniza_article._processed_target) > 0:
                 target_run = arabic_cell_par.add_run(geniza_article._processed_target)
                 if len(geniza_article._processed_leading_ctxt) > 0 or len(geniza_article._processed_trailing_ctxt) > 0:
                     target_run.bold = True
+                    target_run.font.highlight_color = WD_COLOR_INDEX.BRIGHT_GREEN
             if len(geniza_article._processed_trailing_ctxt) > 0:
                 ctxt2_run = arabic_cell_par.add_run(geniza_article._processed_trailing_ctxt)
 
             ja_cell_par = row_cells[1].paragraphs[0]
             if len(geniza_article._original_leading_ctxt) > 0:
                 ctxt1_run = ja_cell_par.add_run(geniza_article._original_leading_ctxt)
+            if len(geniza_article._original_errb) > 0:
+                errb_run = ja_cell_par.add_run(geniza_article._original_errb)
+                errb_run.font.highlight_color = WD_COLOR_INDEX.RED
             if len(geniza_article._original_target) > 0:
                 target_run = ja_cell_par.add_run(geniza_article._original_target)
                 if len(geniza_article._original_leading_ctxt) > 0 or len(geniza_article._original_trailing_ctxt) > 0:
                     target_run.bold = True
+                    target_run.font.highlight_color = WD_COLOR_INDEX.BRIGHT_GREEN
             if len(geniza_article._original_trailing_ctxt) > 0:
                 ctxt2_run = ja_cell_par.add_run(geniza_article._original_trailing_ctxt)
 
@@ -594,7 +606,7 @@ class PipelineManager:
         self._global_start_time = datetime.now()
         self._output_format = output_format
 
-        self._process()
+        self._process(stich_back_long_ones = stich_back)
 
     def _process_pre_pipeline(self) -> List[List[Word]]:
         for task in self.PRE_PIPELINE_TASKS[:-1]:
@@ -632,7 +644,9 @@ class PipelineManager:
             if prev_article and prev_article._pgpid == geniza_article._pgpid:
 
                 #Detect and fix duplication and missing pieces
-                geniza_article.detect_and_fix_errors(prev_article)
+                # geniza_article.detect_and_fix_errors(prev_article)
+                # Detect and highlight duplication and missing pieces
+                geniza_article.detect_and_highlight_errors(prev_article)
 
                 #Untangle, append and remove
                 if stich_back_long_ones:

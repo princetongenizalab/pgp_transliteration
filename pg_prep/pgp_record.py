@@ -5,11 +5,11 @@ class GenizaArticle(object):
 
 	_ctxt_win_size, _target_win_size = -1, -1
 
-	_original_leading_boarder, _original_target_boarder = -1, -1
-	_original_text, _original_leading_ctxt, _original_target, _original_trailing_ctxt = "", "", "", ""
+	_original_leading_boarder, _original_target_boarder, _original_errb_boarder, _original_errc_boarder = -1, -1, -1, -1
+	_original_text, _original_leading_ctxt, _original_target, _original_trailing_ctxt, _original_errb, _original_errc = "", "", "", "", "", ""
 
-	_processed_leading_boarder, _processed_target_boarder = -1, -1
-	_processed_text, _processed_leading_ctxt, _processed_target, _processed_trailing_ctxt = "", "", "", ""
+	_processed_leading_boarder, _processed_target_boarder, _processed_errb_boarder, _processed_errc_boarder = -1, -1, -1, -1
+	_processed_text, _processed_leading_ctxt, _processed_target, _processed_trailing_ctxt, _processed_errb, _processed_errc = "", "", "", "", "", ""
 
 	_processed_words = []
 
@@ -32,6 +32,7 @@ class GenizaArticle(object):
 	def find_word_indices(self, which_boarders = 0):
 
 		leading_boarder = self._original_leading_boarder if which_boarders == 0 else self._processed_leading_boarder
+		errb_boarder = self._original_errb_boarder if which_boarders == 0 else self._processed_errb_boarder
 		target_boarder = self._original_target_boarder if which_boarders == 0 else self._processed_target_boarder
 
 		word_idx, char_idx = 0, 0
@@ -61,7 +62,7 @@ class GenizaArticle(object):
 			if leading_end_word > -1 and word_idx == target_end_word:
 				target_end_text = char_idx
 				break
-			elif word_idx == leading_end_word:
+			elif leading_end_word == word_idx:
 				leading_end_text = char_idx - word_len - 1
 
 			word_idx = word_idx + 1
@@ -77,7 +78,14 @@ class GenizaArticle(object):
 	def mark_original_text(self):
 
 		self._original_leading_ctxt = self._original_text[: self._original_leading_boarder]
-		self._original_target = self._original_text[self._original_leading_boarder: self._original_target_boarder]
+		if self._original_errb_boarder > -1:
+			self._original_errb = self._original_text[self._original_leading_boarder: self._original_errb_boarder]
+			self._original_target = self._original_text[self._original_errb_boarder: self._original_target_boarder]
+		elif self._original_errc_boarder > -1:
+			self._original_errc = self._original_text[self._original_leading_boarder: self._original_errc_boarder]
+			self._original_target = self._original_text[self._original_errc_boarder: self._original_target_boarder]
+		else:
+			self._original_target = self._original_text[self._original_leading_boarder: self._original_target_boarder]
 		self._original_trailing_ctxt = self._original_text[self._original_target_boarder: ]
 
 
@@ -92,7 +100,14 @@ class GenizaArticle(object):
 	def mark_processed_text(self):
 
 		self._processed_leading_ctxt = self._processed_text[: self._processed_leading_boarder]
-		self._processed_target = self._processed_text[self._processed_leading_boarder: self._processed_target_boarder]
+		if self._processed_errb_boarder > -1:
+			self._processed_errb = self._processed_text[self._processed_leading_boarder: self._processed_errb_boarder]
+			self._processed_target = self._processed_text[self._processed_errb_boarder: self._processed_target_boarder]
+		elif self._processed_errc_boarder > -1:
+			self._processed_errc = self._processed_text[self._processed_leading_boarder: self._processed_errc_boarder]
+			self._processed_target = self._processed_text[self._processed_errc_boarder: self._processed_target_boarder]
+		else:
+			self._processed_target = self._processed_text[self._processed_leading_boarder: self._processed_target_boarder]
 		self._processed_trailing_ctxt = self._processed_text[self._processed_target_boarder: ]
 
 
@@ -132,6 +147,34 @@ class GenizaArticle(object):
 		set2 = set([s[::-1] for s in list(self.substrings(s2))]) if which_to_reverse == 1 else set(self.substrings(s2))
 		return set1 & set2
 
+
+	def detect_and_highlight_errors(self, prev_article):
+
+		#Error B (duplication) in the processed text
+		proc_case_b_err = max(self.intersect(prev_article._processed_target[::-1], self._processed_target, 0), key=len, default="")
+		if len(proc_case_b_err) > 2:
+			self._processed_errb_boarder = self._processed_leading_boarder + len(proc_case_b_err)
+			self.mark_processed_text()
+
+		#Error B (duplication) in the original text
+		org_case_b_err = max(self.intersect(prev_article._original_target[::-1], self._original_target, 0), key=len, default="")
+		if len(org_case_b_err) > 2:
+			self._original_errb_boarder = self._original_leading_boarder + len(org_case_b_err)
+			self.mark_original_text()
+
+		#Error C (elimination) in the processed text
+		case_c_err = max(self.intersect(prev_article._processed_trailing_ctxt, self._processed_leading_ctxt[::-1], 1), key=len, default="")
+		if len(case_c_err) > 2:
+			self._processed_errc_boarder = self._processed_leading_boarder
+			self._processed_leading_boarder = self._processed_leading_boarder - len(case_c_err)
+			self.mark_processed_text()
+
+		#Error C (elimination) in the original text
+		case_c_err = max(self.intersect(prev_article._original_trailing_ctxt, self._original_leading_ctxt[::-1], 1), key=len, default="")
+		if len(case_c_err) > 2:
+			self._original_errc_boarder = self._original_leading_boarder
+			self._original_leading_boarder = self._original_leading_boarder - len(case_c_err)
+			self.mark_original_text()
 
 	def detect_and_fix_errors(self, prev_article):
 
