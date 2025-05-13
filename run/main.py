@@ -1,23 +1,65 @@
-from run.e2e_pipe import Import, PipelineManager
 
-initial_input = Import()
+def present_output(output_format, pman):
 
-output_format = "by_list_str"
-# output_format = "by_docx_path"
+    if output_format == "by_list_str":
+        print("Your transliteration is ready! Here are the results:")
+        for sentence in pman.output():
+            print("JA input: ")
+            print(sentence[0])
+            print("Transliterated output: ")
+            print(sentence[1])
+            print()
 
-initial_input.by_docx_path("https://docs.google.com/document/d/1UvOKooSgNCr2jkcbmSDo_v_gGyqQ7d9Z4A-Whd1c9kc/edit?usp=sharing")
-# initial_input.by_list_str(text)
+    elif output_format == "by_docx_path":
+        print(f"Your transliteration is ready! Please visit: {pman.output()}")
 
-pm = PipelineManager(initial_input.output(), output_format=output_format)
 
-if output_format == "by_list_str":
-    print("Your transliteration is ready! Here are the results:")
-    for sentence in pm.output():
-        print("JA input: ")
-        print(sentence[0])
-        print("Transliterated output: ")
-        print(sentence[1])
-        print()
+def transliterate_ja():
 
-elif output_format == "by_docx_path":
-    print(f"Your transliteration is ready! Please visit: {pm.output()}")
+    output_format = "by_list_str"
+    # output_format = "by_docx_path"
+    ja_text = "חצרנא נחן אלשהוד"
+
+    from pg_prep.pgp_record import GenizaArticle
+    test_ja = [GenizaArticle(original_text=ja_text, pgpid=-1, ctxt_win_size=100, target_win_size=300)]
+
+    from run.e2e_pipe import PipelineManager
+    pm = PipelineManager(test_ja, output_format=output_format)
+    present_output(output_format, pm)
+
+
+def transliterate_pgp_ja():
+
+    # from pg_prep.sliding_window import test_sliding_window
+    # test_sliding_window(article_content = "ABCDEFGHIJKLMNOPQRSTUVWXYZ", target_window = 3, ctxt_window = 1)
+    # test_sliding_window(article_content = "ABCDEFGHIJKLMNOPQRSTUVWXYZ", target_window = 5, ctxt_window = 0)
+
+    from pg_prep.prep_pg_data import content_by_pgps
+    ids_texts = content_by_pgps([451, 4268, 444])
+
+    from pg_prep.sliding_window import slice
+    sliced = slice(contents=[ids_texts[0][1], ids_texts[1][1], ids_texts[2][1]],
+				   pgpids = [ids_texts[0][0], ids_texts[1][0], ids_texts[2][0]],
+				   target_window = 300,
+				   ctxt_window = 100)
+
+    from run.e2e_pipe import PipelineManager
+    output_format = "by_docx_path"
+    pm = PipelineManager(sliced, output_format=output_format, stich_back=False)
+    present_output(output_format, pm)
+
+
+def main():
+
+    # Sentence-level transliteration
+    # transliterate_ja()
+
+    # PG data pre-processing
+    # from pg_prep.prep_pg_data import prep_and_stats
+    # prep_and_stats()
+
+    # Document-level transliteration
+    transliterate_pgp_ja()
+
+if __name__=="__main__":
+    main()
