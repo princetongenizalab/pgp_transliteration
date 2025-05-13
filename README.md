@@ -35,8 +35,7 @@ sliced = slice(contents=[ids_texts[0][1], ids_texts[1][1]],
 ```
 from run.e2e_pipe import PipelineManager
 output_format = "by_docx_path"
-pm = PipelineManager(sliced, output_format=output_format, stich_back=True)```
-
+pm = PipelineManager(sliced, output_format=output_format, stich_back=True)
 ```
 ### And present the result
 
